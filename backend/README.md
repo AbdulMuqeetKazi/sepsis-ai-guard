@@ -161,6 +161,117 @@ uvicorn app.main:app --reload
 | GET    | `/alerts`      | Recent clinical alerts         |
 | POST   | `/feedback`    | Submit clinician feedback      |
 | GET    | `/dashboard`   | Summary statistics             |
+| POST   | `/agent/explain` | ML-based clinical explanation (Gemini or fallback) |
+| POST   | `/agent/summary` | Short clinical summary (Gemini or fallback) |
+| POST   | `/agent/chat`  | Scoped chat about prediction results |
+| POST   | `/agent/voice-query` | Spoken-friendly short chat reply |
+
+## Gemini clinical assistant
+
+The Gemini integration provides **decision-support text only** — explanations, summaries, chat, and voice-style replies. It does **not** run ML inference, change sepsis probability, or replace the XGBoost model on `/predict`.
+
+### 1. Get a Gemini API key
+
+1. Go to [Google AI Studio](https://aistudio.google.com/apikey).
+2. Create an API key for your project.
+
+### 2. Configure environment variables
+
+Add to `backend/.env`:
+
+```env
+GEMINI_API_KEY=your-gemini-api-key
+ENABLE_GEMINI_AGENT=true
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+| Variable | Description |
+|----------|-------------|
+| `GEMINI_API_KEY` | Google Gemini API key (never commit to git) |
+| `ENABLE_GEMINI_AGENT` | Set to `true` to enable Gemini; `false` uses rule-based fallback |
+| `GEMINI_MODEL` | Model name (default: `gemini-2.5-flash`) |
+
+Restart the API after changing `.env`. On Render, add the same variables in the service dashboard.
+
+### 3. Safety behavior
+
+- Gemini receives **only** the data you send in each request (patient code, risk level, probability, vitals, abnormal features).
+- Supabase credentials and full database records are **never** sent to Gemini.
+- If Gemini is disabled, the API key is missing, or the API call fails, endpoints return `"source": "fallback"` with rule-based text — the API does not crash.
+- Prompts enforce clinical guardrails: no diagnosis, no prescriptions, no dosage, no treatment orders, and mandatory clinician review.
+
+### 4. Test locally
+
+Start the API, then open **http://127.0.0.1:8000/docs** and try the **Clinical Agent** endpoints.
+
+**Explain** — `POST /agent/explain`:
+
+```json
+{
+  "patient_id": "P001",
+  "risk_level": "Critical Risk",
+  "sepsis_probability": 0.82,
+  "vitals": {
+    "heart_rate": 118,
+    "temperature": 38.6,
+    "systolic_bp": 92,
+    "spo2": 91,
+    "lactate": 3.8
+  },
+  "abnormal_features": [
+    "High heart rate",
+    "High temperature",
+    "Low oxygen saturation",
+    "High lactate"
+  ]
+}
+```
+
+Expected response shape:
+
+```json
+{
+  "success": true,
+  "source": "gemini",
+  "explanation": "..."
+}
+```
+
+With `ENABLE_GEMINI_AGENT=false`, `"source"` will be `"fallback"`.
+
+**Chat** — `POST /agent/chat`:
+
+```json
+{
+  "message": "Why is this patient critical risk?",
+  "patient_id": "P001",
+  "prediction_context": {
+    "risk_level": "Critical Risk",
+    "sepsis_probability": 0.82,
+    "abnormal_features": [
+      "High heart rate",
+      "High lactate",
+      "Low oxygen saturation"
+    ]
+  }
+}
+```
+
+**Voice query** — `POST /agent/voice-query` uses the same request body; responses are shorter and spoken-friendly.
+
+Out-of-scope questions (e.g. unrelated medical or general topics) return:
+
+```text
+I can only help with sepsis prediction results, patient risk explanation, clinical summaries, alerts, and monitoring support.
+```
+
+### 5. Verify fallback mode
+
+To confirm the API works without Gemini:
+
+1. Set `ENABLE_GEMINI_AGENT=false` (or leave `GEMINI_API_KEY` empty).
+2. Call any `/agent/*` endpoint.
+3. Confirm `"source": "fallback"` and a rule-based response — `/predict` and `/health` should still work normally.
 
 ## Deploy on Render
 
@@ -182,6 +293,8 @@ Each `/predict` request runs through:
 2. **PredictionAgent** — runs XGBoost ML inference
 3. **ReasoningAgent** — rule-based explanations + recommendations
 4. **AlertAgent** — escalates High/Critical risk cases
+
+Gemini endpoints (`/agent/*`) are separate from this pipeline and are used only for natural-language explanations and chat.
 
 ## License
 

@@ -19,5 +19,8 @@ python-dotenv>=1.0.0
 # Optional — Supabase persistence (API works without it)
 supabase>=2.0.0
 
+# Optional — Gemini clinical assistant (explanations/chat only)
+google-genai>=1.0.0
+
 # Documentation / architecture diagrams
 graphviz>=0.20.0

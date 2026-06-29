@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     supabase_url: str | None = None
     supabase_key: str | None = None
 
+    # Gemini clinical assistant (optional — explanations/chat only, not ML inference)
+    gemini_api_key: str | None = None
+    enable_gemini_agent: bool = False
+    gemini_model: str = "gemini-2.5-flash"
+
     # Alert thresholds
     alert_probability_threshold: float = 0.61
     prediction_threshold: float = 0.5
@@ -48,6 +53,10 @@ class Settings(BaseSettings):
     @property
     def supabase_configured(self) -> bool:
         return bool(self.supabase_url and self.supabase_key)
+
+    @property
+    def gemini_enabled(self) -> bool:
+        return self.enable_gemini_agent and bool(self.gemini_api_key)
 
 
 @lru_cache
