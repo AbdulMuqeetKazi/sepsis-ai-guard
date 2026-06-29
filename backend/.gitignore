@@ -15,5 +15,4 @@ ml/data/raw/*.xlsx
 
 # Generated artifacts (reproduce via pipeline)
 ml/data/processed/
-ml/models/*.pkl
 ml/reports/
