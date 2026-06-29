@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Environment secrets
+.env
+.env.local
+
+# Large raw datasets (place locally; see README)
+ml/data/raw/*.csv
+ml/data/raw/*.xlsx
+
+# Generated artifacts (reproduce via pipeline)
+ml/data/processed/
+ml/models/*.pkl
+ml/reports/

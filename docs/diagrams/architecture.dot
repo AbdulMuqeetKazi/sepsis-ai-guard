@@ -1,0 +1,131 @@
+// SepsisAI Guard — System Architecture (Graphviz DOT)
+// Render: dot -Tpng architecture.dot -o architecture.png
+// Requires Graphviz desktop app for rendering; Python graphviz package for programmatic use.
+
+digraph SepsisAIGuard {
+    rankdir=TB;
+    compound=true;
+    fontname="Helvetica";
+    node [shape=box, style=rounded, fontname="Helvetica"];
+    edge [fontname="Helvetica", fontsize=10];
+
+    label="SepsisAI Guard — Architecture";
+    labelloc=t;
+    fontsize=16;
+
+    // --- Clients ---
+    subgraph cluster_clients {
+        label="Clients";
+        style=dashed;
+        Frontend [label="Frontend\n(planned)", shape=component, style=dashed];
+        CLI [label="CLI / Swagger\n/ml scripts", shape=note];
+    }
+
+    // --- API ---
+    subgraph cluster_api {
+        label="FastAPI Backend (backend/app/)";
+        color=royalblue;
+
+        Main [label="main.py\nCORS + lifespan"];
+        
+        subgraph cluster_routes {
+            label="API Routes";
+            style=dashed;
+            Health [label="/health"];
+            Predict [label="/predict", fillcolor=lightyellow, style="rounded,filled"];
+            Alerts [label="/alerts"];
+            Dashboard [label="/dashboard"];
+            Feedback [label="/feedback"];
+            Patients [label="/patients\n(in-memory)"];
+        }
+
+        subgraph cluster_agents {
+            label="Agentic AI Layer";
+            color=darkgreen;
+            Orchestrator [label="AgentOrchestrator", fillcolor=lightgreen, style="rounded,filled"];
+            Monitoring [label="MonitoringAgent"];
+            PredAgent [label="PredictionAgent"];
+            Reasoning [label="ReasoningAgent"];
+            AlertAgent [label="AlertAgent"];
+            FeedbackAgent [label="FeedbackAgent\n(placeholder)"];
+        }
+
+        subgraph cluster_services {
+            label="Services";
+            style=dashed;
+            PredSvc [label="PredictionService"];
+            RiskSvc [label="RiskService"];
+            ExplSvc [label="ExplanationService"];
+            SupaSvc [label="SupabaseService"];
+        }
+
+        Schemas [label="Pydantic Schemas", shape=ellipse];
+        Config [label="core/config.py\n.env settings", shape=ellipse];
+    }
+
+    // --- ML ---
+    subgraph cluster_ml {
+        label="ML Subsystem (backend/ml/) — Offline";
+        color=orange;
+
+        Preprocess [label="preprocess_data.py"];
+        Train [label="train_model.py\nLR | RF | XGBoost"];
+        Evaluate [label="evaluate_model.py"];
+        RawData [label="data/raw/\n3 datasets", shape=cylinder];
+        Processed [label="data/processed/\ncombined CSV", shape=cylinder];
+        ModelPkl [label="models/\nsepsis_model.pkl", shape=cylinder, fillcolor=moccasin, style=filled];
+        Reports [label="reports/\nmetrics, plots", shape=note];
+    }
+
+    // --- External ---
+    subgraph cluster_external {
+        label="External";
+        style=dashed;
+        Supabase [label="Supabase\nPostgreSQL", shape=cylinder, fillcolor=lightblue, style=filled];
+        Render [label="Render\n(PaaS deploy)", shape=cloud];
+    }
+
+    // --- Client → API ---
+    Frontend -> Main [label="HTTP/JSON", style=dashed];
+    CLI -> Predict [label="dev/test"];
+    CLI -> Preprocess [label="training"];
+
+    Main -> Health;
+    Main -> Predict;
+    Main -> Alerts;
+    Main -> Dashboard;
+    Main -> Feedback;
+    Main -> Patients;
+
+    Predict -> Orchestrator;
+    Predict -> Schemas;
+    Feedback -> FeedbackAgent;
+
+    // --- Orchestrator flow ---
+    Orchestrator -> Monitoring;
+    Orchestrator -> PredAgent;
+    Orchestrator -> Reasoning;
+    Orchestrator -> AlertAgent;
+    Orchestrator -> SupaSvc;
+
+    PredAgent -> PredSvc;
+    Reasoning -> ExplSvc;
+    Reasoning -> RiskSvc;
+    AlertAgent -> RiskSvc;
+
+    PredSvc -> ModelPkl [label="predict_proba"];
+
+    // --- Supabase ---
+    SupaSvc -> Supabase [label="REST API\n(optional)"];
+
+    // --- ML pipeline ---
+    RawData -> Preprocess;
+    Preprocess -> Processed;
+    Processed -> Train;
+    Train -> ModelPkl;
+    Train -> Reports;
+    ModelPkl -> Evaluate;
+
+    // --- Deploy ---
+    Main -> Render [label="uvicorn", style=dashed];
+}

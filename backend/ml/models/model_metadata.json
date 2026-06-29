@@ -1,0 +1,106 @@
+{
+  "model_name": "XGBoost",
+  "version": "1.0.0",
+  "trained_at": "2026-06-28T09:56:32.263416+00:00",
+  "selection_criteria": "recall > f1_score > roc_auc",
+  "feature_columns": [
+    "age",
+    "gender",
+    "heart_rate",
+    "respiratory_rate",
+    "temperature",
+    "systolic_bp",
+    "diastolic_bp",
+    "map",
+    "spo2",
+    "wbc_count",
+    "platelet_count",
+    "hemoglobin",
+    "lactate",
+    "creatinine",
+    "bilirubin",
+    "blood_urea_nitrogen",
+    "glucose",
+    "ph_level",
+    "pao2",
+    "paco2",
+    "sofa_score",
+    "qsofa_score",
+    "gcs_score",
+    "urine_output",
+    "shock_index",
+    "icu_los"
+  ],
+  "random_state": 42,
+  "test_size": 0.2,
+  "best_model_metrics": {
+    "accuracy": 0.8309658276716624,
+    "precision": 0.07317308807048731,
+    "recall": 0.6361498404165967,
+    "f1_score": 0.1312492418597397,
+    "roc_auc": 0.8144143001420512,
+    "confusion_matrix": [
+      [
+        242665,
+        47967
+      ],
+      [
+        2166,
+        3787
+      ]
+    ]
+  },
+  "all_models_metrics": {
+    "Logistic Regression": {
+      "accuracy": 0.7770655967092065,
+      "precision": 0.051415108407145624,
+      "recall": 0.5792037628086679,
+      "f1_score": 0.09444634664110114,
+      "roc_auc": 0.7252683230647006,
+      "confusion_matrix": [
+        [
+          227018,
+          63614
+        ],
+        [
+          2505,
+          3448
+        ]
+      ]
+    },
+    "Random Forest": {
+      "accuracy": 0.9795572938617935,
+      "precision": 0.3259493670886076,
+      "recall": 0.0173022005711406,
+      "f1_score": 0.032860105279948953,
+      "roc_auc": 0.8541826847095628,
+      "confusion_matrix": [
+        [
+          290419,
+          213
+        ],
+        [
+          5850,
+          103
+        ]
+      ]
+    },
+    "XGBoost": {
+      "accuracy": 0.8309658276716624,
+      "precision": 0.07317308807048731,
+      "recall": 0.6361498404165967,
+      "f1_score": 0.1312492418597397,
+      "roc_auc": 0.8144143001420512,
+      "confusion_matrix": [
+        [
+          242665,
+          47967
+        ],
+        [
+          2166,
+          3787
+        ]
+      ]
+    }
+  }
+}

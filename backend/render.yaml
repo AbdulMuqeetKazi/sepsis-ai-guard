@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: sepsisai-guard-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: CORS_ORIGINS
+        value: "https://your-frontend.onrender.com"
+      # Optional — add in Render dashboard (do not commit secrets)
+      # - key: SUPABASE_URL
+      #   sync: false
+      # - key: SUPABASE_KEY
+      #   sync: false
