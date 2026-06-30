@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import agent_routes, alerts, dashboard, feedback, health, patients, predict
+from app.api import agent_routes, alerts, dashboard, feedback, health, patients, predict, model_metrics
 from app.core.config import get_settings
 from app.services.prediction_service import prediction_service
 from app.utils.logger import logger
@@ -65,6 +65,7 @@ def create_app() -> FastAPI:
     app.include_router(feedback.router)
     app.include_router(dashboard.router)
     app.include_router(agent_routes.router)
+    app.include_router(model_metrics.router)
 
     @app.get("/", tags=["Root"])
     def root() -> dict:

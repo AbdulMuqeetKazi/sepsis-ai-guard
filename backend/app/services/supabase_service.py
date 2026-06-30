@@ -385,6 +385,30 @@ def get_recent_alerts(limit: int = 20) -> list[dict[str, Any]]:
     return get_alerts(limit=limit)
 
 
+def update_alert_status(alert_id: str, status: str) -> dict[str, Any]:
+    """Update the status of an alert in Supabase or in-memory store."""
+    valid_statuses = {"open", "reviewed", "resolved"}
+    if status not in valid_statuses:
+        raise ValueError(f"Invalid status: {status}. Must be one of {valid_statuses}")
+
+    client = _get_client()
+    if client is None:
+        for alert in _memory_alerts:
+            if alert["id"] == alert_id:
+                alert["status"] = status
+                return {"saved": True, "alert_id": alert_id, "status": status, "storage": "memory"}
+        return {"saved": False, "error": "Alert not found", "storage": "memory"}
+
+    try:
+        result = client.table("alerts").update({"status": status}).eq("id", alert_id).execute()
+        if not result.data:
+            return _failure("update_alert_status", RuntimeError("Alert not found or no data returned"))
+        
+        return {"saved": True, "alert_id": alert_id, "status": status, "storage": "supabase"}
+    except Exception as exc:
+        return _failure("update_alert_status", exc, alert_id=alert_id)
+
+
 def get_dashboard_stats() -> dict[str, Any]:
     """Return summary counts for the dashboard endpoint."""
     client = _get_client()

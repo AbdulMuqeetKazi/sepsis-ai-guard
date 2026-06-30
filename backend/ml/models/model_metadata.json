@@ -1,7 +1,7 @@
 {
   "model_name": "XGBoost",
   "version": "1.0.0",
-  "trained_at": "2026-06-28T09:56:32.263416+00:00",
+  "trained_at": "2026-06-30T13:46:32.317129+00:00",
   "selection_criteria": "recall > f1_score > roc_auc",
   "feature_columns": [
     "age",

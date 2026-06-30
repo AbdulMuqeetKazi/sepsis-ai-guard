@@ -347,6 +347,38 @@ def save_artifacts(
         importance_df.to_csv(FEATURE_IMPORTANCE_PATH, index=False)
         logger.info("Saved feature importance to %s", FEATURE_IMPORTANCE_PATH)
 
+    # Save format required by the frontend
+    cm = best_metrics["confusion_matrix"]
+    tn, fp, fn, tp = cm[0][0], cm[0][1], cm[1][0], cm[1][1]
+    
+    feature_importance_list = []
+    if importance_df is not None:
+        feature_importance_list = importance_df.to_dict(orient="records")
+
+    frontend_metrics = {
+        "model_name": model_name,
+        "model_version": MODEL_VERSION,
+        "accuracy": best_metrics["accuracy"],
+        "precision": best_metrics["precision"],
+        "recall": best_metrics["recall"],
+        "f1_score": best_metrics["f1_score"],
+        "roc_auc": best_metrics["roc_auc"],
+        "confusion_matrix": {
+            "true_positive": tp,
+            "true_negative": tn,
+            "false_positive": fp,
+            "false_negative": fn
+        },
+        "feature_importance": feature_importance_list,
+        "training_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "metrics_source": "actual_training_evaluation"
+    }
+
+    frontend_metrics_path = MODELS_DIR / "model_metrics.json"
+    with open(frontend_metrics_path, "w", encoding="utf-8") as f:
+        json.dump(frontend_metrics, f, indent=2)
+    logger.info("Saved frontend metrics to %s", frontend_metrics_path)
+
 
 def run_training() -> Pipeline:
     """Execute the full training pipeline."""

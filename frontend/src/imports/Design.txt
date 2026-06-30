@@ -1,0 +1,176 @@
+Design a production-level healthcare AI web application named “SepsisAI Guard”.
+
+Project subtitle:
+“Early Sepsis Risk Detection with Agentic AI Clinical Support”
+
+The app is a clinical decision-support dashboard for sepsis risk prediction using machine learning and Gemini-powered AI explanations.
+
+Design style:
+- Modern healthcare SaaS dashboard
+- Clean white background with soft light grey sections
+- Medical blue primary color
+- Teal/cyan secondary accent
+- Green for Low Risk
+- Yellow for Medium Risk
+- Orange for High Risk
+- Red for Critical Risk
+- Rounded cards
+- Subtle shadows
+- Professional typography
+- Minimal animations
+- Responsive desktop-first layout
+- Clean clinical interface, not cartoonish
+- Should feel like a real AI hospital monitoring dashboard
+
+Create these screens:
+
+1. Landing Page
+- Hero section with product name “SepsisAI Guard”
+- Tagline: “Early Sepsis Risk Detection with Agentic AI Clinical Support”
+- CTA buttons: “Get Started” and “Login”
+- Feature cards:
+  ML Sepsis Prediction
+  Gemini Clinical Assistant
+  Real-Time Alerts
+  Patient History
+  Doctor Feedback
+  Model Performance
+- Simple workflow section:
+  Enter Vitals → ML Prediction → AI Explanation → Alert → Feedback
+- Safety note:
+  “Decision-support only. Final clinical decisions remain with qualified healthcare professionals.”
+
+2. Login Page
+- Clean centered login card
+- Google Sign-In button
+- Medical AI illustration or abstract healthcare pattern
+- Product logo/name
+- Short text: “Secure access for clinical risk monitoring”
+
+3. Main Dashboard
+- Sidebar navigation:
+  Dashboard
+  New Prediction
+  Patients
+  Prediction History
+  Alerts
+  AI Assistant
+  Feedback
+  Model Performance
+  Settings
+- Topbar:
+  Search
+  Backend status
+  Gemini status
+  User avatar
+  Logout
+- KPI cards:
+  Total Patients
+  Predictions Today
+  High Risk Cases
+  Critical Alerts
+  Model Status
+  Gemini Assistant
+- Risk distribution chart
+- Recent alerts panel
+- Recent predictions table
+- AI insight card
+
+4. Add Patient / Patient Form
+- Multi-section clinical form:
+  Patient Details
+  Vital Signs
+  Laboratory Values
+  Severity Scores
+- Fields:
+  Age, Gender, Heart Rate, Respiratory Rate, Temperature, Systolic BP, Diastolic BP, MAP, SpO2, WBC Count, Platelet Count, Hemoglobin, Lactate, Creatinine, Bilirubin, BUN, Glucose, SOFA Score, qSOFA Score, GCS Score
+- Buttons:
+  Save Patient
+  Run Prediction
+- Clean form validation style
+
+5. Prediction Result Page
+- Large risk result card
+- Probability gauge
+- Risk level badge
+- ML explanation card
+- Gemini AI explanation card
+- Clinical summary card
+- Abnormal vitals grid
+- Recommendation card
+- Alert generated badge
+- Buttons:
+  Ask AI
+  Submit Feedback
+  Save Report
+
+6. Patient History Page
+- Patient table
+- Search and filters
+- Risk level badges
+- Last prediction date
+- Action buttons:
+  View Details
+  Ask AI
+  View Alerts
+
+7. Alerts Page
+- ICU-style alert console but clean and professional
+- Critical alert cards
+- High-risk alert cards
+- Alert table
+- Status chips:
+  New
+  Reviewed
+  Resolved
+- Action buttons:
+  View Patient
+  Ask AI
+  Mark Reviewed
+
+8. AI Assistant Page
+- Chat interface named “SepsisAI Assistant”
+- Message bubbles
+- Source badge: Gemini / Fallback
+- Quick prompt buttons:
+  Explain this prediction
+  Generate clinical summary
+  What vitals are abnormal?
+  What should be monitored?
+  Why is this high risk?
+- Safety disclaimer card
+- Optional voice input button
+- Professional medical AI style
+
+9. Feedback Page
+- Feedback form:
+  Prediction ID
+  Actual Result
+  Was Prediction Correct?
+  Doctor Comment
+- Previous feedback table
+- Info card explaining feedback helps clinical audit and future model improvement
+
+10. Model Performance Page
+- Model overview card
+- Metrics cards:
+  Accuracy
+  Precision
+  Recall
+  F1 Score
+  ROC-AUC
+- Confusion matrix card
+- Feature importance chart
+- Model version and training date
+- Explanation card:
+  “Recall is prioritized because missing true sepsis cases is clinically dangerous.”
+
+Overall UI requirements:
+- Desktop dashboard layout
+- Responsive tablet/mobile layouts
+- Sidebar collapses on smaller screens
+- Use real healthcare dashboard spacing
+- Avoid clutter
+- Avoid cartoon doctor graphics
+- Avoid billing, pharmacy, appointment, and hospital ERP modules
+- Make the product look like an AI clinical decision-support system
