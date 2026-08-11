@@ -24,3 +24,22 @@ class FeedbackResponse(BaseModel):
     status: str = "success"
     message: str
     feedback_id: str
+
+
+class FeedbackRecord(BaseModel):
+    """A single feedback record returned from the database."""
+
+    id: str
+    prediction_id: str
+    actual_result: str | None = None
+    doctor_comment: str | None = None
+    is_prediction_correct: bool | None = None
+    created_at: str | None = None
+
+
+class FeedbackListResponse(BaseModel):
+    """Response for GET /feedback listing feedback records."""
+
+    feedback: list[FeedbackRecord]
+    count: int
+

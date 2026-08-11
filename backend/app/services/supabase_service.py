@@ -360,6 +360,26 @@ def save_feedback(payload: dict[str, Any]) -> dict[str, Any]:
         return _failure("save_feedback", exc, feedback_id=None)
 
 
+def get_feedback(limit: int = 20) -> list[dict[str, Any]]:
+    """Fetch recent clinician feedback from Supabase or in-memory store."""
+    client = _get_client()
+    if client is None:
+        return list(reversed(_memory_feedback[-limit:]))
+
+    try:
+        result = (
+            client.table("feedback")
+            .select("id, prediction_id, actual_result, doctor_comment, is_prediction_correct, created_at")
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return result.data or []
+    except Exception as exc:
+        logger.warning("get_feedback failed: %s", exc)
+        return list(reversed(_memory_feedback[-limit:]))
+
+
 def get_alerts(limit: int = 20) -> list[dict[str, Any]]:
     """Fetch recent alerts from Supabase or in-memory store."""
     client = _get_client()

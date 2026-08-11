@@ -111,6 +111,20 @@ export interface FeedbackResponse {
   feedback_id: string;
 }
 
+export interface FeedbackRecord {
+  id: string;
+  prediction_id: string;
+  actual_result?: string | null;
+  doctor_comment?: string | null;
+  is_prediction_correct?: boolean | null;
+  created_at?: string | null;
+}
+
+export interface FeedbackListResponse {
+  feedback: FeedbackRecord[];
+  count: number;
+}
+
 export interface AgentContextPayload {
   patient_id?: string | null;
   risk_level: string;

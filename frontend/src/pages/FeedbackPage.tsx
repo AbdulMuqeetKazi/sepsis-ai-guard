@@ -1,9 +1,45 @@
-import { ThumbsDown, ThumbsUp, TrendingUp } from 'lucide-react';
-import { useState } from 'react';
+import { CheckCircle, Clock, MessageSquare, ThumbsDown, ThumbsUp, TrendingUp, XCircle } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Card, ErrorBanner } from '../components/common/UiPrimitives';
+import { Card, ErrorBanner, LoadingState } from '../components/common/UiPrimitives';
 import { PageHeader } from '../components/layout/PageHeader';
 import * as feedbackService from '../services/feedbackService';
+import type { FeedbackRecord } from '../types/api';
+
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function CorrectnessBadge({ value }: { value: boolean | null | undefined }) {
+  if (value === true)
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">
+        <CheckCircle size={11} /> Correct
+      </span>
+    );
+  if (value === false)
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
+        <XCircle size={11} /> Incorrect
+      </span>
+    );
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500">
+      Unknown
+    </span>
+  );
+}
 
 export default function FeedbackPage() {
   const location = useLocation();
@@ -17,6 +53,27 @@ export default function FeedbackPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [history, setHistory] = useState<FeedbackRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    setHistoryError(null);
+    try {
+      const result = await feedbackService.getFeedback(20);
+      setHistory(result.feedback);
+    } catch (err) {
+      setHistoryError(err instanceof Error ? err.message : 'Failed to load feedback history');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   const handleSubmit = async () => {
     if (!predictionId.trim()) {
@@ -44,6 +101,13 @@ export default function FeedbackPage() {
         is_prediction_correct: isCorrect,
       });
       setSuccess(`${response.message} (Feedback ID: ${response.feedback_id})`);
+      // Reset form fields
+      setPredictionId('');
+      setActualResult('');
+      setDoctorComment('');
+      setIsCorrect(null);
+      // Refresh history list
+      loadHistory();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit feedback');
     } finally {
@@ -161,11 +225,73 @@ export default function FeedbackPage() {
         </div>
       </Card>
 
+      {/* Feedback History */}
       <Card className="p-5">
-        <h3 className="mb-2 text-sm font-semibold text-slate-900">Previous Feedback</h3>
-        <p className="text-sm text-slate-500">
-          Previous feedback history is not available from the backend yet. Pending endpoint.
-        </p>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-slate-900">Previous Feedback</h3>
+          <button
+            type="button"
+            onClick={loadHistory}
+            disabled={historyLoading}
+            className="text-xs font-medium text-[#00478d] hover:underline disabled:opacity-50"
+          >
+            Refresh
+          </button>
+        </div>
+
+        {historyLoading && <LoadingState message="Loading feedback history…" />}
+
+        {historyError && !historyLoading && (
+          <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {historyError}
+          </div>
+        )}
+
+        {!historyLoading && !historyError && history.length === 0 && (
+          <div className="flex flex-col items-center gap-2 py-8 text-center">
+            <MessageSquare size={32} className="text-slate-300" />
+            <p className="text-sm font-medium text-slate-500">No feedback submitted yet</p>
+            <p className="text-xs text-slate-400">
+              Submitted feedback records will appear here after saving.
+            </p>
+          </div>
+        )}
+
+        {!historyLoading && !historyError && history.length > 0 && (
+          <div className="space-y-3">
+            {history.map((record) => (
+              <div
+                key={record.id}
+                className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4"
+              >
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <CorrectnessBadge value={record.is_prediction_correct} />
+                    {record.actual_result && (
+                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600">
+                        {record.actual_result}
+                      </span>
+                    )}
+                  </div>
+                  <span className="flex items-center gap-1 text-xs text-slate-400">
+                    <Clock size={11} />
+                    {formatDate(record.created_at)}
+                  </span>
+                </div>
+
+                <p className="mb-1 font-mono text-xs text-slate-400">
+                  Prediction ID: {record.prediction_id || '—'}
+                </p>
+
+                {record.doctor_comment && (
+                  <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                    "{record.doctor_comment}"
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );

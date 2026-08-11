@@ -2,10 +2,15 @@
 
 import uuid
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from app.agents.feedback_agent import FeedbackAgent
-from app.schemas.feedback_schema import FeedbackRequest, FeedbackResponse
+from app.schemas.feedback_schema import (
+    FeedbackListResponse,
+    FeedbackRecord,
+    FeedbackRequest,
+    FeedbackResponse,
+)
 from app.services import supabase_service
 from app.utils.logger import logger
 
@@ -54,3 +59,27 @@ def submit_feedback(request: FeedbackRequest) -> FeedbackResponse:
         message=agent_result["message"],
         feedback_id=str(feedback_id),
     )
+
+
+@router.get("", response_model=FeedbackListResponse)
+def list_feedback(
+    limit: int = Query(default=20, ge=1, le=100, description="Max records to return"),
+) -> FeedbackListResponse:
+    """
+    Retrieve recent clinician feedback records, newest first.
+
+    Returns up to `limit` records (default 20, max 100).
+    """
+    records = supabase_service.get_feedback(limit=limit)
+    feedback_items = [
+        FeedbackRecord(
+            id=str(r.get("id", "")),
+            prediction_id=str(r.get("prediction_id", "")),
+            actual_result=r.get("actual_result"),
+            doctor_comment=r.get("doctor_comment"),
+            is_prediction_correct=r.get("is_prediction_correct"),
+            created_at=r.get("created_at"),
+        )
+        for r in records
+    ]
+    return FeedbackListResponse(feedback=feedback_items, count=len(feedback_items))
