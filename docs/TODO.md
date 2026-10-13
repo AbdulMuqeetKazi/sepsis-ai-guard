@@ -4,8 +4,9 @@ Inferred from existing code comments, placeholders, and gaps. No invented featur
 
 ## High priority
 
-- [ ] **Frontend application** — README and `render.yaml` reference a future frontend; none exists in the repo yet
-- [ ] **Automated tests** — `backend/tests/` folder is empty; no unit or integration tests for API or ML pipeline
+- [ ] **Automated tests** — `backend/tests/` folder is empty; no unit or integration tests for API or ML pipeline. No frontend tests exist.
+- [ ] **Backend authentication** — Frontend sends Firebase ID tokens but backend has no JWT verification middleware; all endpoints are effectively public
+- [ ] **Frontend deployment** — No deployment configuration exists (Vercel, Netlify, or Render static site)
 
 ## Backend / API
 
@@ -20,8 +21,7 @@ Inferred from existing code comments, placeholders, and gaps. No invented featur
 
 ## Operations
 
-- [ ] **Render deployment** — ensure `sepsis_model.pkl` is available on server (Git LFS or build-step artifact); noted in README
-- [ ] **Authentication** — no auth on API endpoints currently
+- [ ] **Render backend deployment** — ensure `sepsis_model.pkl` is available on server (Git LFS or build-step artifact); noted in backend README
 
 ## Documentation
 

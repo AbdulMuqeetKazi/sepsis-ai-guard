@@ -2,19 +2,24 @@
 
 ## High-level architecture
 
-SepsisAI Guard is a **backend-only** system with two major subsystems:
+SepsisAI Guard is a full-stack clinical decision support system with three major subsystems:
 
-1. **ML training pipeline** — offline scripts that preprocess data, train models, and export artifacts.
-2. **FastAPI inference API** — online service that loads the trained model, runs an agentic assessment pipeline, and optionally persists results to Supabase.
+1. **Frontend application** — React + TypeScript SPA with authentication, prediction forms, dashboard, and AI assistant chat.
+2. **Backend API** — FastAPI service that loads the trained model, runs an agentic assessment pipeline, and optionally persists results to Supabase.
+3. **ML training pipeline** — offline scripts that preprocess data, train models, and export artifacts.
 
-A future frontend (not in repo) is expected to call the REST API. CORS is pre-configured for `localhost:3000` and `localhost:5173`.
+CORS is pre-configured for `localhost:5173` (Vite default) and `localhost:3000`.
 
 ```
 ┌─────────────┐     HTTP/JSON      ┌──────────────────┐     SQL/REST     ┌───────────┐
-│  Frontend   │ ─────────────────► │  FastAPI Backend │ ───────────────► │ Supabase  │
-│  (planned)  │ ◄───────────────── │  (app/)          │ ◄─────────────── │ PostgreSQL│
-└─────────────┘                    └────────┬─────────┘                  └───────────┘
-                                            │
+│  React      │ ─────────────────► │  FastAPI Backend │ ───────────────► │ Supabase  │
+│  Frontend   │ ◄───────────────── │  (app/)          │ ◄─────────────── │ PostgreSQL│
+│  (Vite)     │                    │                  │                  │           │
+└─────────────┘                    │  ┌────────────┐  │                  └───────────┘
+      │                            │  │ Gemini API │  │
+      │  Firebase Auth             │  │ (optional) │  │
+      └───────────────────────────►│  └────────────┘  │
+                                   └────────┬─────────┘
                                             │ joblib load
                                             ▼
                                    ┌──────────────────┐
@@ -25,7 +30,44 @@ A future frontend (not in repo) is expected to call the REST API. CORS is pre-co
 
 ## Components
 
-### 1. API layer (`app/api/`)
+### 1. Frontend (`frontend/src/`)
+
+React + TypeScript single-page application built with Vite.
+
+**Pages (12 total):**
+- `LandingPage.tsx` — Public landing page
+- `LoginPage.tsx` — Firebase Google OAuth login
+- `DashboardPage.tsx` — KPIs, charts, alerts, system status
+- `NewPredictionPage.tsx` — Multi-section clinical data form with reference panel
+- `PredictionResultPage.tsx` — Risk display with Gemini-enriched explanations
+- `PatientsPage.tsx` — Patient registry
+- `PatientHistoryPage.tsx` — Patient history viewer
+- `AlertsPage.tsx` — Clinical alerts console
+- `AIAssistantPage.tsx` — Gemini chat interface
+- `FeedbackPage.tsx` — Clinician feedback form
+- `ModelPerformancePage.tsx` — Model metrics display
+- `SettingsPage.tsx` — User settings
+
+**API Services (8 modules in `services/`):**
+- `predictionService.ts` → `POST /predict`
+- `patientService.ts` → `GET/POST /patients`, `GET /patients/{id}`
+- `alertService.ts` → `GET /alerts`
+- `dashboardService.ts` → `GET /dashboard`
+- `healthService.ts` → `GET /health`
+- `feedbackService.ts` → `POST /feedback`, `GET /feedback`
+- `agentService.ts` → `POST /agent/explain`, `/agent/summary`, `/agent/chat`, `/agent/voice-query`
+- `modelService.ts` → `GET /model/metrics`
+
+**Authentication:**
+- Firebase Google OAuth via `AuthContext.tsx`
+- Protected routes via `ProtectedRoute.tsx`
+- JWT token attached to API requests (backend verification not implemented)
+
+**State Management:**
+- `AuthContext` — Firebase user state
+- `PredictionContext` — Prediction session data (form, result, Gemini enrichments)
+
+### 2. Backend API layer (`app/api/`)
 
 Thin route handlers that validate input via Pydantic schemas and delegate to services or the orchestrator.
 
@@ -37,8 +79,13 @@ Thin route handlers that validate input via Pydantic schemas and delegate to ser
 | `GET /dashboard` | `dashboard.py` | Aggregate stats |
 | `POST /feedback` | `feedback.py` | Clinician feedback |
 | `GET/POST /patients` | `patients.py` | In-memory patient registry |
+| `POST /agent/explain` | `agent_routes.py` | Gemini clinical explanation |
+| `POST /agent/summary` | `agent_routes.py` | Gemini clinical summary |
+| `POST /agent/chat` | `agent_routes.py` | Gemini scoped chat |
+| `POST /agent/voice-query` | `agent_routes.py` | Gemini voice-friendly reply |
+| `GET /model/metrics` | `model_metrics.py` | Model performance metrics |
 
-### 2. Agentic AI layer (`app/agents/`)
+### 3. Agentic AI layer (`app/agents/`)
 
 Each `/predict` request flows through `AgentOrchestrator`:
 
@@ -53,9 +100,15 @@ Request → create/get patient (Supabase)
        → Response
 ```
 
-Agents are **rule-based and deterministic** — no external LLM or paid API calls.
+Agents are **rule-based and deterministic** — no external LLM or paid API calls in the main prediction pipeline.
 
-### 3. Service layer (`app/services/`)
+**Gemini assistant** (separate from main pipeline):
+- Optional post-prediction enrichment via `/agent/*` endpoints
+- Provides natural-language explanations, summaries, and chat
+- Graceful fallback to rule-based text when disabled or unavailable
+- Does not modify sepsis probability or risk level
+
+### 4. Service layer (`app/services/`)
 
 | Service | Concern |
 |---------|---------|
@@ -63,8 +116,10 @@ Agents are **rule-based and deterministic** — no external LLM or paid API call
 | `RiskService` | Probability → Low/Medium/High/Critical + safe text |
 | `ExplanationService` | Clinical threshold rules (HR, temp, BP, lactate, etc.) |
 | `SupabaseService` | Database CRUD with in-memory fallback |
+| `GeminiService` | Optional Gemini API wrapper (explanations, summaries, chat) |
+| `AgentPromptService` | Gemini prompts + fallback text generation |
 
-### 4. ML subsystem (`ml/`)
+### 5. ML subsystem (`ml/`)
 
 Offline pipeline, independent of the running API:
 
@@ -102,17 +157,38 @@ Raw datasets (3 sources)
 
 If Supabase fails at any step, the API logs a warning and still returns the prediction.
 
-## Backend / frontend interaction
+## Frontend / backend interaction
 
 | Aspect | Current state |
 |--------|---------------|
-| Frontend | Not implemented |
+| Frontend | Fully implemented (React + TypeScript) |
 | API format | JSON over HTTP |
-| CORS | Configurable via `CORS_ORIGINS` |
-| Auth | None (not implemented) |
-| Primary contract | `POST /predict` |
+| CORS | Configured via `CORS_ORIGINS` (defaults: `localhost:5173`, `localhost:3000`) |
+| Auth | Firebase on frontend (JWT sent); backend has no verification middleware |
+| Primary endpoints | `POST /predict`, `GET /dashboard`, `POST /agent/*` |
+| API client | Axios with base URL from `VITE_API_BASE_URL` |
 
-Expected frontend integration: submit patient vitals, display risk level, explanations, and alert status using returned `patient_uuid` / `prediction_id` for follow-up actions.
+**Prediction flow:**
+1. Frontend: User fills form → `NewPredictionPage.tsx`
+2. Frontend: `predictionService.predict(payload)` → `POST /predict`
+3. Backend: Orchestrator runs agents → returns `PredictionResponse`
+4. Frontend: Parallel calls to `POST /agent/explain` and `POST /agent/summary` (optional Gemini enrichment)
+5. Frontend: Store result in `PredictionContext`
+6. Frontend: Navigate to `/predict/result` → `PredictionResultPage.tsx` displays risk, explanations, recommendations
+
+**Dashboard flow:**
+1. Frontend: `DashboardPage.tsx` loads on mount
+2. Frontend: Parallel calls to `GET /dashboard`, `GET /health`, `GET /patients`, `GET /alerts`
+3. Backend: Returns aggregated stats from Supabase or in-memory data
+4. Frontend: Renders KPIs, charts, recent patients, recent alerts, system status
+
+**Authentication flow:**
+1. Frontend: User clicks "Sign in with Google" → `LoginPage.tsx`
+2. Frontend: Firebase `signInWithPopup(auth, googleProvider)`
+3. Frontend: `onAuthStateChanged` → updates `AuthContext`
+4. Frontend: `ProtectedRoute` checks user state → allows/denies route access
+5. Frontend: API interceptor attaches `Authorization: Bearer {firebase_id_token}` to requests
+6. Backend: **No JWT verification** — tokens are sent but not validated (security gap)
 
 ## Database (Supabase)
 
@@ -152,9 +228,17 @@ Credentials: `SUPABASE_URL` + `SUPABASE_KEY` in `backend/.env`.
 
 ## Deployment
 
+**Backend:**
 - **Local:** `uvicorn app.main:app --reload` from `backend/`
 - **Render:** `Procfile` + `render.yaml`; start command uses `$PORT`
 - **Secrets:** Set via Render dashboard or `.env` locally
+- **Note:** Ensure `sepsis_model.pkl` is available (Git LFS or build-step download)
+
+**Frontend:**
+- **Local:** `npm run dev` from `frontend/` (runs on `http://localhost:5173`)
+- **Build:** `npm run build` → `dist/` folder
+- **Deployment:** Not configured (needs Vercel, Netlify, or Render static site setup)
+- **Environment:** Set `VITE_API_BASE_URL` to production backend URL
 
 ## Architecture diagram
 
